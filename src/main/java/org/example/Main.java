@@ -3,11 +3,13 @@ package org.example;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
+import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
 
 public class Main {
     private static final ExecutorService executorService = Executors.newFixedThreadPool(4);
@@ -28,10 +31,7 @@ public class Main {
 
         String directory = args[0];
         String attributeName = args[1];
-
-        List<String> attributeNames = Arrays.stream(attributeName.split(","))
-                .map(String::trim)
-                .toList();
+        List<String> attributeNames = Arrays.stream(attributeName.split(",")).toList();
 
         for (String a : attributeNames)
             System.out.println(a);
@@ -56,46 +56,46 @@ public class Main {
 
         System.out.println("Statistics for attribute '" + attributeName + "':");
 
-        for (Map.Entry<String, Map<String, Integer>> outerEntry : statistics.entrySet()) {
-            System.out.print(outerEntry.getKey() + "|| ");
-            Map<String, Integer> innerMap = outerEntry.getValue();
-            for (Map.Entry<String, Integer> innerEntry : innerMap.entrySet()) {
-                System.out.print(innerEntry.getKey()+ ": " + innerEntry.getValue() + " | ");
+        // робочий варіант із сортування
+        statistics.forEach((key, value) -> executorService.submit(() -> {
+            String fileName = "statistics_by_" + key + ".xml";
+            try {
+                List<Map.Entry<String, Integer>> sortedData = value.entrySet().stream()
+                        .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                        .toList();
+                writeStatisticsToXML(fileName, sortedData);
+                System.out.println("Statistics file created: " + fileName);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            System.out.println();
-        }
-
-        statistics.forEach((key, value) -> {
-            executorService.submit(() -> {
-                String fileName = "statistics_by_" + key + ".xml";
-                try {
-                    writeStatisticsToXML(fileName, value);
-                    System.out.println("Statistics file created: " + fileName);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-        });
+        }));
 
         executorService.shutdown();
         try {
-            executorService.awaitTermination(60, TimeUnit.SECONDS);
+            if (executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
         } catch (InterruptedException e) {
+            executorService.shutdownNow();
             e.printStackTrace();
         }
     }
-    private static void writeStatisticsToXML(String fileName, Map<String, Integer> data) throws IOException {
-        try (FileWriter writer = new FileWriter(fileName)) {
+    private static void writeStatisticsToXML(String fileName, List<Map.Entry<String, Integer>> sortedData) throws IOException {
+        try (FileWriter fileWriter = new FileWriter(fileName);
+             BufferedWriter writer = new BufferedWriter(fileWriter, 110)) {
             writer.write("<statistics>\n");
-            for (Map.Entry<String, Integer> entry : data.entrySet()) {
+            for (Map.Entry<String, Integer> entry : sortedData) {
                 writer.write("  <item>\n");
                 writer.write("    <value>" + entry.getKey() + "</value>\n");
                 writer.write("    <count>" + entry.getValue() + "</count>\n");
                 writer.write("  </item>\n");
             }
             writer.write("</statistics>");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
+
     private static void processJsonFile(Path filePath, List<String> attributeNames, Map<String, Map<String, Integer>> statistics) {
         try (JsonReader reader = new JsonReader(Files.newBufferedReader(filePath))) {
             reader.beginArray();
