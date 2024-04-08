@@ -20,7 +20,9 @@ public class JsonProcessor {
         this.executorService = executorService;
     }
     public void processJsonFiles(
-            Path dirPath, Map<String, Map<String, Integer>> attributeValueCounts, List<String> attributeNames) throws IOException {
+            Path dirPath,
+            Map<String, Map<String, Integer>> attributeValueCounts,
+            List<String> attributeNames) throws IOException {
         try (Stream<Path> pathStream = Files.list(dirPath)) {
             pathStream
                     .filter(Files::isRegularFile)
@@ -37,7 +39,10 @@ public class JsonProcessor {
         }
     }
 
-    private void parseJson(Path filePath, List<String> attributeNames, Map<String, Map<String, Integer>> attributeValueCounts) throws IOException {
+    private void parseJson(
+            Path filePath,
+            List<String> attributeNames,
+            Map<String, Map<String, Integer>> attributeValueCounts) throws IOException {
         try (JsonReader reader = new JsonReader(Files.newBufferedReader(filePath))) {
             reader.beginArray();
             while (reader.hasNext()) {

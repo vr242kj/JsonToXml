@@ -30,7 +30,9 @@ public class XMLWriter {
         }));
     }
 
-    private void writeStatisticsToXMLFile(String fileName, List<Map.Entry<String, Integer>> sortedData) throws IOException {
+    private void writeStatisticsToXMLFile(
+            String fileName,
+            List<Map.Entry<String, Integer>> sortedData) throws IOException {
         try (FileWriter fileWriter = new FileWriter(fileName);
              BufferedWriter writer = new BufferedWriter(fileWriter, 110)) {
             writer.write("<statistics>\n");
