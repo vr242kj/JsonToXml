@@ -50,9 +50,12 @@ public class JsonProcessor {
                 while (reader.hasNext()) {
                     String key = reader.nextName();
                     if (attributeNames.contains(key) && reader.peek() != JsonToken.NULL) {
-                        String value = reader.nextString();
-                        attributeValueCounts.computeIfAbsent(key, k -> new ConcurrentHashMap<>())
-                                .merge(value, 1, Integer::sum);
+                        String values = reader.nextString();
+                        if (!values.isEmpty()) {
+                            String firstValue = getFirstValue(values);
+                            attributeValueCounts.computeIfAbsent(key, k -> new ConcurrentHashMap<>())
+                                    .merge(firstValue, 1, Integer::sum);
+                        }
                     } else {
                         reader.skipValue();
                     }
@@ -61,5 +64,10 @@ public class JsonProcessor {
             }
             reader.endArray();
         }
+    }
+
+    private String getFirstValue(String values){
+        String[] arrayOfValues = values.split(",");
+        return arrayOfValues[0].trim();
     }
 }
