@@ -16,9 +16,10 @@ import java.util.stream.Stream;
 public class JsonProcessor {
     private final ExecutorService executorService;
 
-    public JsonProcessor(ExecutorService executorService){
+    public JsonProcessor(ExecutorService executorService) {
         this.executorService = executorService;
     }
+
     public void processJsonFiles(
             Path dirPath,
             Map<String, Map<String, Integer>> attributeValueCounts,
@@ -31,38 +32,58 @@ public class JsonProcessor {
                         try {
                             parseJson(filePath, attributeNames, attributeValueCounts);
                         } catch (IOException e) {
-                            throw new  RuntimeException("Error parsing file: " + filePath, e);
+                            throw new RuntimeException("Error parsing file: " + filePath, e);
                         }
                     }));
         } catch (IOException e) {
-            throw new  IOException("An error occurred while getting the file list: " + e.getMessage());
+            throw new IOException("An error occurred while getting the file list: " + e.getMessage());
         }
     }
 
     private void parseJson(
             Path filePath,
             List<String> attributeNames,
-            Map<String, Map<String, Integer>> attributeValueCounts) throws IOException {
+            Map<String, Map<String, Integer>> attributeValueCounts
+    ) throws IOException {
         try (JsonReader reader = new JsonReader(Files.newBufferedReader(filePath))) {
-            reader.beginArray();
+            processJsonElement(reader, attributeNames, attributeValueCounts);
+        }
+    }
+
+    private void processJsonElement(
+            JsonReader reader,
+            List<String> attributeNames,
+            Map<String, Map<String, Integer>> attributeValueCounts
+    ) throws IOException {
+        reader.beginArray();
+        while (reader.hasNext()) {
+            reader.beginObject();
             while (reader.hasNext()) {
-                reader.beginObject();
-                while (reader.hasNext()) {
-                    String key = reader.nextName();
-                    if (attributeNames.contains(key) && reader.peek() != JsonToken.NULL) {
-                        String values = reader.nextString();
-                        if (!values.isEmpty()) {
-                            String firstValue = getFirstValue(values);
-                            attributeValueCounts.computeIfAbsent(key, k -> new ConcurrentHashMap<>())
-                                    .merge(firstValue, 1, Integer::sum);
-                        }
-                    } else {
-                        reader.skipValue();
-                    }
+                String key = reader.nextName();
+                if (reader.peek() == JsonToken.NULL) {
+                    reader.skipValue();
+                } else if (reader.peek() == JsonToken.BEGIN_ARRAY) {
+                    processJsonElement(reader, attributeNames, attributeValueCounts);
+                } else {
+                    processValue(reader, key, attributeNames, attributeValueCounts);
                 }
-                reader.endObject();
             }
-            reader.endArray();
+            reader.endObject();
+        }
+        reader.endArray();
+    }
+
+    private void processValue(
+            JsonReader reader,
+            String key,
+            List<String> attributeNames,
+            Map<String, Map<String, Integer>> attributeValueCounts
+    ) throws IOException {
+        String value = reader.nextString();
+        if (attributeNames.contains(key) && !value.isEmpty()) {
+            String firstValue = getFirstValue(value);
+            attributeValueCounts.computeIfAbsent(key, k -> new ConcurrentHashMap<>())
+                    .merge(firstValue, 1, Integer::sum);
         }
     }
 
@@ -71,3 +92,5 @@ public class JsonProcessor {
         return arrayOfValues[0].trim();
     }
 }
+
+
