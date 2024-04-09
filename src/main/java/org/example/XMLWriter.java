@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 public class XMLWriter {
-
+    private static final int BUFFER_SIZE_IN_CHARS = 125;
     private final ExecutorService executorService;
 
     public XMLWriter(ExecutorService executorService) {
@@ -35,7 +35,7 @@ public class XMLWriter {
             List<Map.Entry<String, Integer>> sortedData
     ) throws IOException {
         try (FileWriter fileWriter = new FileWriter(fileName);
-             BufferedWriter writer = new BufferedWriter(fileWriter, 110)) {
+             BufferedWriter writer = new BufferedWriter(fileWriter, BUFFER_SIZE_IN_CHARS)) {
             writer.write("<statistics>\n");
             for (Map.Entry<String, Integer> entry : sortedData) {
                 String itemXML = """
