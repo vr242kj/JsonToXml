@@ -15,22 +15,25 @@ import java.util.stream.Stream;
 
 public class JsonProcessor {
     private final ExecutorService executorService;
+    private final Map<String, Map<String, Integer>> attributeValueCounts;
+    private final List<String> attributeNames;
 
-    public JsonProcessor(ExecutorService executorService) {
+    public JsonProcessor(ExecutorService executorService, List<String> attributeNames,
+                         Map<String, Map<String, Integer>> attributeValueCounts
+    ) {
         this.executorService = executorService;
+        this.attributeNames = attributeNames;
+        this.attributeValueCounts = attributeValueCounts;
     }
 
-    public void processJsonFiles(
-            Path dirPath,
-            Map<String, Map<String, Integer>> attributeValueCounts,
-            List<String> attributeNames) throws IOException {
+    public void processJsonFiles(Path dirPath) throws IOException {
         try (Stream<Path> pathStream = Files.list(dirPath)) {
             pathStream
                     .filter(Files::isRegularFile)
                     .filter(filePath -> filePath.toString().toLowerCase().endsWith(".json"))
                     .forEach(filePath -> executorService.submit(() -> {
                         try {
-                            parseJson(filePath, attributeNames, attributeValueCounts);
+                            parseJson(filePath);
                         } catch (IOException e) {
                             throw new RuntimeException("Error parsing file: " + filePath, e);
                         }
@@ -40,21 +43,13 @@ public class JsonProcessor {
         }
     }
 
-    private void parseJson(
-            Path filePath,
-            List<String> attributeNames,
-            Map<String, Map<String, Integer>> attributeValueCounts
-    ) throws IOException {
+    private void parseJson(Path filePath) throws IOException {
         try (JsonReader reader = new JsonReader(Files.newBufferedReader(filePath))) {
-            processJsonElement(reader, attributeNames, attributeValueCounts);
+            processJsonElement(reader);
         }
     }
 
-    private void processJsonElement(
-            JsonReader reader,
-            List<String> attributeNames,
-            Map<String, Map<String, Integer>> attributeValueCounts
-    ) throws IOException {
+    private void processJsonElement(JsonReader reader) throws IOException {
         reader.beginArray();
         while (reader.hasNext()) {
             reader.beginObject();
@@ -63,9 +58,9 @@ public class JsonProcessor {
                 if (reader.peek() == JsonToken.NULL) {
                     reader.skipValue();
                 } else if (reader.peek() == JsonToken.BEGIN_ARRAY) {
-                    processJsonElement(reader, attributeNames, attributeValueCounts);
+                    processJsonElement(reader);
                 } else {
-                    processValue(reader, key, attributeNames, attributeValueCounts);
+                    processValue(reader, key);
                 }
             }
             reader.endObject();
@@ -73,12 +68,7 @@ public class JsonProcessor {
         reader.endArray();
     }
 
-    private void processValue(
-            JsonReader reader,
-            String key,
-            List<String> attributeNames,
-            Map<String, Map<String, Integer>> attributeValueCounts
-    ) throws IOException {
+    private void processValue(JsonReader reader, String key) throws IOException {
         String value = reader.nextString();
         if (attributeNames.contains(key) && !value.isEmpty()) {
             String firstValue = getFirstValue(value);

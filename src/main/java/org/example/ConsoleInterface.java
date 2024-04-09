@@ -29,12 +29,13 @@ public class ConsoleInterface {
 
             Map<String, Map<String, Integer>> attributeValueCounts = new ConcurrentHashMap<>();
 
-            JsonProcessor jsonParser = new JsonProcessor(executorService);
-            jsonParser.processJsonFiles(directoryPath, attributeValueCounts, attributeNames);
+            JsonProcessor jsonParser = new JsonProcessor(executorService, attributeNames, attributeValueCounts);
+            jsonParser.processJsonFiles(directoryPath);
 
             waitForExecutorServiceTermination();
 
             XMLWriter xmlWriter = new XMLWriter(executorService);
+
             xmlWriter.generateStatisticsFile(attributeValueCounts);
 
             shutdownExecutorService();
@@ -52,7 +53,7 @@ public class ConsoleInterface {
         String directory = args[0];
         attributeName = args[1];
 
-        directoryPath  = Path.of(directory);
+        directoryPath = Path.of(directory);
 
         if (!Files.exists(directoryPath ) || !Files.isDirectory(directoryPath )) {
             throw new IllegalArgumentException("Invalid directory path.");

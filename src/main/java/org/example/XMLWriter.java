@@ -38,10 +38,13 @@ public class XMLWriter {
              BufferedWriter writer = new BufferedWriter(fileWriter, 110)) {
             writer.write("<statistics>\n");
             for (Map.Entry<String, Integer> entry : sortedData) {
-                writer.write("  <item>\n");
-                writer.write("    <value>" + entry.getKey() + "</value>\n");
-                writer.write("    <count>" + entry.getValue() + "</count>\n");
-                writer.write("  </item>\n");
+                String itemXML = """
+                          <item>
+                           <value>%s</value>
+                           <count>%s</count>
+                          </item>
+                        """.formatted(entry.getKey(), entry.getValue());
+                writer.write(itemXML);
             }
             writer.write("</statistics>");
         }
