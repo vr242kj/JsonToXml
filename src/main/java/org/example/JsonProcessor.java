@@ -6,6 +6,7 @@ import com.google.gson.stream.JsonToken;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,16 +71,20 @@ public class JsonProcessor {
 
     private void processValue(JsonReader reader, String key) throws IOException {
         String value = reader.nextString();
-        if (attributeNames.contains(key) && !value.isEmpty()) {
-            String firstValue = getFirstValue(value);
+        if (!attributeNames.contains(key) || value.isEmpty()) {
+            return;
+        }
+        String[] arrayOfValues = parseValues(value);
+        for (String valueFromArray : arrayOfValues) {
             attributeValueCounts.computeIfAbsent(key, k -> new ConcurrentHashMap<>())
-                    .merge(firstValue, 1, Integer::sum);
+                    .merge(valueFromArray, 1, Integer::sum);
         }
     }
 
-    private String getFirstValue(String values){
-        String[] arrayOfValues = values.split(",");
-        return arrayOfValues[0].trim();
+    private String[] parseValues(String values){
+        return Arrays.stream(values.split(","))
+                .map(String::trim)
+                .toArray(String[]::new);
     }
 }
 
