@@ -19,6 +19,18 @@ public class JsonProcessor {
     private final Map<String, Map<String, Integer>> attributeValueCounts;
     private final List<String> attributeNames;
 
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
+
+    public Map<String, Map<String, Integer>> getAttributeValueCounts() {
+        return attributeValueCounts;
+    }
+
+    public List<String> getAttributeNames() {
+        return attributeNames;
+    }
+
     public JsonProcessor(ExecutorService executorService, List<String> attributeNames,
                          Map<String, Map<String, Integer>> attributeValueCounts
     ) {
