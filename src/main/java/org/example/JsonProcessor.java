@@ -65,24 +65,46 @@ public class JsonProcessor {
     private void processJsonElement(JsonReader reader) throws IOException {
         reader.beginArray();
         while (reader.hasNext()) {
-            reader.beginObject();
-            while (reader.hasNext()) {
-                String key = reader.nextName();
-                if (reader.peek() == JsonToken.NULL) {
-                    reader.skipValue();
-                } else if (reader.peek() == JsonToken.BEGIN_ARRAY) {
-                    processJsonElement(reader);
-                } else {
-                    processValue(reader, key);
-                }
+            if (reader.peek() == JsonToken.BEGIN_OBJECT) {
+                processJsonObject(reader);
             }
-            reader.endObject();
         }
         reader.endArray();
     }
 
-    private void processValue(JsonReader reader, String key) throws IOException {
-        String value = reader.nextString();
+    private void processJsonObject(JsonReader reader) throws IOException {
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String key = reader.nextName();
+            switch (reader.peek()) {
+                case STRING, NUMBER -> {
+                    String value = reader.nextString();
+                    processValue(key, value);
+                }
+                case BEGIN_OBJECT -> processJsonObject(reader);
+                case BEGIN_ARRAY -> processJsonArray(reader, key);
+                default -> reader.skipValue();
+            }
+        }
+        reader.endObject();
+    }
+
+    private void processJsonArray(JsonReader reader, String parentKey) throws IOException {
+        reader.beginArray();
+        while (reader.hasNext()) {
+            switch (reader.peek()) {
+                case STRING, NUMBER -> {
+                    String value = reader.nextString();
+                    processValue(parentKey, value);
+                }
+                case BEGIN_OBJECT -> processJsonObject(reader);
+                default -> reader.skipValue();
+            }
+        }
+        reader.endArray();
+    }
+
+    private void processValue(String key, String value) {
         if (!attributeNames.contains(key) || value.isEmpty()) {
             return;
         }

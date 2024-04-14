@@ -12,8 +12,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class ConsoleInterface {
-    private static final int THREAD_POOL_SIZE = 4;
-    private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+    private final static int THREAD_POOL_SIZE = 4;
+    private static ExecutorService executorService;
     private static final String USAGE_MESSAGE = """
             Usage: mvn compile exec:java "-Dexec.args=<directory_path> <attribute_names>"
             "The <attribute_names> parameter should be a comma-separated list of attribute names, without any spaces.
@@ -28,6 +28,7 @@ public class ConsoleInterface {
             List<String> attributeNames = parseAttributes(attributeName);
 
             Map<String, Map<String, Integer>> attributeValueCounts = new ConcurrentHashMap<>();
+            executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
             JsonProcessor jsonParser = new JsonProcessor(executorService, attributeNames, attributeValueCounts);
             jsonParser.processJsonFiles(directoryPath);
@@ -60,18 +61,18 @@ public class ConsoleInterface {
         }
 
         if (attributeName.isEmpty()) {
-            throw new IllegalArgumentException("Attribute list is empty");
+            throw new IllegalArgumentException("Attribute list is empty.");
         }
     }
     private static List<String> parseAttributes(String attributeNames) {
         return Arrays.stream(attributeNames.split(",")).toList();
     }
 
-    private static void waitForExecutorServiceTermination() throws InterruptedException {
+    public static void waitForExecutorServiceTermination() throws InterruptedException {
         executorService.awaitTermination(2, TimeUnit.SECONDS);
     }
 
-    private static void shutdownExecutorService() throws InterruptedException {
+    public static void shutdownExecutorService() throws InterruptedException {
         executorService.shutdown();
         if (!executorService.awaitTermination(2, TimeUnit.SECONDS)) {
             executorService.shutdownNow();
