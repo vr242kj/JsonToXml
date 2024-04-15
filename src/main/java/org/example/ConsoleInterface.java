@@ -35,15 +35,17 @@ public class ConsoleInterface {
         try {
             parseInputArguments(args);
             List<String> attributeNames = parseAttributes(attributeName);
-
             Map<String, Map<String, Integer>> attributeValueCounts = new ConcurrentHashMap<>();
-            executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+
+            executorService =  Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
             JsonProcessor jsonParser = new JsonProcessor(executorService, attributeNames, attributeValueCounts);
             jsonParser.processJsonFiles(directoryPath);
 
-            waitForExecutorServiceTermination();
+            shutdownExecutorService();
 
+            int numberOfAttributes = attributeNames.size();
+            executorService =  Executors.newFixedThreadPool(numberOfAttributes);
             XMLWriter xmlWriter = new XMLWriter(executorService);
 
             xmlWriter.generateStatisticsFile(attributeValueCounts);
@@ -88,15 +90,6 @@ public class ConsoleInterface {
      */
     private static List<String> parseAttributes(String attributeNames) {
         return Arrays.stream(attributeNames.split(",")).toList();
-    }
-
-    /**
-     * Waits for the ExecutorService to terminate.
-     *
-     * @throws InterruptedException If interrupted while waiting for termination
-     */
-    public static void waitForExecutorServiceTermination() throws InterruptedException {
-        executorService.awaitTermination(2, TimeUnit.SECONDS);
     }
 
     /**

@@ -52,7 +52,7 @@ class JsonProcessorTest {
         jsonProcessor.processJsonFiles(Path.of(path));
 
         executorService.shutdown();
-        executorService.awaitTermination(2, TimeUnit.SECONDS);
+        executorService.awaitTermination(2, TimeUnit.MILLISECONDS);
 
         Map<String, Map<String, Integer>> result = jsonProcessor.getAttributeValueCounts();
         assertEquals(2, result.size());

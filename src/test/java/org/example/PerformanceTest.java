@@ -13,7 +13,7 @@ import java.util.concurrent.Executors;
 
 class PerformanceTest {
     @ParameterizedTest
-    @ValueSource(ints = {1,  2, 4, 8})
+    @ValueSource(ints = {1, 2, 4, 8})
     public void performanceWithDifferentThreadPoolSizes(int threadCount) throws NoSuchFieldException, IllegalAccessException {
         long startTime = System.currentTimeMillis();
 
