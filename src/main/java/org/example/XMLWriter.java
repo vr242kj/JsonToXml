@@ -8,14 +8,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+/**
+ * The XMLWriter class is responsible for generating XML statistics files based on attribute value counts.
+ */
 public class XMLWriter {
     private static final int BUFFER_SIZE_IN_CHARS = 125;
     private final ExecutorService executorService;
 
+    /**
+     * Constructs an XMLWriter object with the specified ExecutorService.
+     *
+     * @param executorService The ExecutorService for concurrent writing operations
+     */
     public XMLWriter(ExecutorService executorService) {
         this.executorService = executorService;
     }
 
+    /**
+     * Generates an XML statistics file for each attribute based on the provided attribute value counts.
+     *
+     * @param attributeValueCounts The map containing attribute value counts
+     */
     public void generateStatisticsFile(Map<String, Map<String, Integer>> attributeValueCounts) {
         attributeValueCounts.forEach((key, value) -> executorService.submit(() -> {
             String fileName = "statistics_by_" + key + ".xml";
@@ -30,6 +43,13 @@ public class XMLWriter {
         }));
     }
 
+    /**
+     * Writes the XML statistics data to a file.
+     *
+     * @param fileName   The name of the XML file to write
+     * @param sortedData The sorted list of attribute value counts
+     * @throws IOException If an I/O error occurs while writing to the file
+     */
     private void writeStatisticsToXMLFile(
             String fileName,
             List<Map.Entry<String, Integer>> sortedData
