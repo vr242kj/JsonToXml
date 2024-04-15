@@ -20,9 +20,12 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+
 
 class JsonProcessorTest {
     private JsonProcessor jsonProcessor;
@@ -73,6 +76,14 @@ class JsonProcessorTest {
     }
 
     @Test
+    void processJsonFiles_WhenDirPathNotExist_ThrowIOException() {
+        String dirPath = "notExist";
+
+        assertThrows(IOException.class,
+                () -> jsonProcessor.processJsonFiles(Path.of(dirPath)));
+    }
+
+    @Test
     void parseJson() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method method = JsonProcessor.class.getDeclaredMethod("parseJson", Path.class);
         method.setAccessible(true);
@@ -88,7 +99,23 @@ class JsonProcessorTest {
     }
 
     @Test
-    void testProcessJsonElement_whenKeyHasValue() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    void parseJson_WhenFilePathNotExist_ThrowIOException() throws NoSuchMethodException {
+        Method method = JsonProcessor.class.getDeclaredMethod("parseJson", Path.class);
+        method.setAccessible(true);
+
+        Path filePath = Path.of("notExist.json");
+
+        assertThrows(IOException.class, () -> {
+            try {
+                method.invoke(jsonProcessor, filePath);
+            } catch (InvocationTargetException e) {
+                throw e.getTargetException();
+            }
+        });
+    }
+
+    @Test
+    void processJsonElement_WhenKeyHasValue() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         JsonReader reader = mock(JsonReader.class);
 
         when(reader.hasNext()).thenReturn(true).thenReturn(true).thenReturn(false);
@@ -108,7 +135,24 @@ class JsonProcessorTest {
     }
 
     @Test
-    void testProcessJsonElement_whenKeyHasArrayOfValues() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    void processJsonElement_WhenNoArrayStart_ThrowIOException() throws NoSuchMethodException, IOException {
+        Method method = JsonProcessor.class.getDeclaredMethod("processJsonElement", JsonReader.class);
+        method.setAccessible(true);
+        JsonReader mockReader = mock(JsonReader.class);
+
+        doThrow(IOException.class).when(mockReader).beginArray();
+
+        assertThrows(IOException.class, () -> {
+            try {
+                method.invoke(jsonProcessor, mockReader);
+            } catch (InvocationTargetException e) {
+                throw e.getTargetException();
+            }
+        });
+    }
+
+    @Test
+    void processJsonElement_WhenKeyHasArrayOfValues() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         JsonReader reader = mock(JsonReader.class);
 
         when(reader.hasNext()).thenReturn(true).thenReturn(true).thenReturn(true)
@@ -130,7 +174,7 @@ class JsonProcessorTest {
     }
 
     @Test
-    public void testProcessValue_KeyNotPresent() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public void processValue_WhenKeyNotPresent() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method method = JsonProcessor.class.getDeclaredMethod("processValue", String.class, String.class);
         method.setAccessible(true);
 
@@ -141,7 +185,7 @@ class JsonProcessorTest {
     }
 
     @Test
-    public void testProcessValue_ValueIsEmpty() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public void processValue_WhenValueIsEmpty() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method method = JsonProcessor.class.getDeclaredMethod("processValue", String.class, String.class);
         method.setAccessible(true);
 
@@ -152,7 +196,7 @@ class JsonProcessorTest {
     }
 
     @Test
-    public void testProcessValue_KeyPresentAndValueNotEmpty() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public void processValue_WhenKeyPresentAndValueNotEmpty() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method method = JsonProcessor.class.getDeclaredMethod("processValue", String.class, String.class);
         method.setAccessible(true);
 
