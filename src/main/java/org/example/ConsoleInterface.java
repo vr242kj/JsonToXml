@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
  * The class utilizes multi-threading for efficient processing.
  */
 public class ConsoleInterface {
-    private final static int THREAD_POOL_SIZE = 4;
     private static ExecutorService executorService;
     private static final String USAGE_MESSAGE = """
             Usage: mvn compile exec:java "-Dexec.args=<directory_path> <attribute_names>"
@@ -37,7 +36,8 @@ public class ConsoleInterface {
             List<String> attributeNames = parseAttributes(attributeName);
             Map<String, Map<String, Integer>> attributeValueCounts = new ConcurrentHashMap<>();
 
-            executorService =  Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+            int fileCount = (int) Files.walk(directoryPath).count();
+            executorService =  Executors.newFixedThreadPool(fileCount);
 
             JsonProcessor jsonParser = new JsonProcessor(executorService, attributeNames, attributeValueCounts);
             jsonParser.processJsonFiles(directoryPath);
