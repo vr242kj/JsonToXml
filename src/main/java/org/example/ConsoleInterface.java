@@ -17,8 +17,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class ConsoleInterface {
     private static ExecutorService executorService;
-    private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
-    private static int jsonThreadCount;
     private static final String USAGE_MESSAGE = """
             Usage: mvn compile exec:java "-Dexec.args=<directory_path> <attribute_names>"
             "The <attribute_names> parameter should be a comma-separated list of attribute names, without any spaces.
@@ -98,8 +96,7 @@ public class ConsoleInterface {
             Map<String, Map<String, Integer>> attributeValueCounts
     ) throws IOException {
         int fileCount = (int) Files.walk(directoryPath).count();
-        jsonThreadCount = Math.min(fileCount, MAX_THREADS);
-        executorService =  Executors.newFixedThreadPool(jsonThreadCount);
+        executorService =  Executors.newFixedThreadPool(fileCount);
         JsonProcessor jsonParser = new JsonProcessor(executorService, attributeNames, attributeValueCounts);
         jsonParser.processJsonFiles(directoryPath);
     }
@@ -112,8 +109,7 @@ public class ConsoleInterface {
      */
     private static void writeXML(List<String> attributeNames, Map<String, Map<String, Integer>> attributeValueCounts) {
         int numberOfAttributes = attributeNames.size();
-        jsonThreadCount = Math.min(numberOfAttributes, MAX_THREADS);
-        executorService =  Executors.newFixedThreadPool(jsonThreadCount);
+        executorService =  Executors.newFixedThreadPool(numberOfAttributes);
         XMLWriter xmlWriter = new XMLWriter(executorService);
         xmlWriter.generateStatisticsFile(attributeValueCounts);
     }
