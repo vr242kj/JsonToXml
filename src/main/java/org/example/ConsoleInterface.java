@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ConsoleInterface {
     private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
-    private static ExecutorService executorService = Executors.newFixedThreadPool(MAX_THREADS);;
+    private static ExecutorService executorService = Executors.newFixedThreadPool(MAX_THREADS);
     private static final String USAGE_MESSAGE = """
             Usage: mvn compile exec:java "-Dexec.args=<directory_path> <attribute_names>"
             "The <attribute_names> parameter should be a comma-separated list of attribute names, without any spaces.
