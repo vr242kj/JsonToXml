@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -16,7 +17,8 @@ import java.util.concurrent.TimeUnit;
  * The class utilizes multi-threading for efficient processing.
  */
 public class ConsoleInterface {
-    private static ExecutorService executorService;
+    private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
+    private static ExecutorService executorService = Executors.newFixedThreadPool(MAX_THREADS);;
     private static final String USAGE_MESSAGE = """
             Usage: mvn compile exec:java "-Dexec.args=<directory_path> <attribute_names>"
             "The <attribute_names> parameter should be a comma-separated list of attribute names, without any spaces.
@@ -36,14 +38,10 @@ public class ConsoleInterface {
             List<String> attributeNames = parseAttributes(attributeName);
             Map<String, Map<String, Integer>> attributeValueCounts = new ConcurrentHashMap<>();
 
-            jsonProcessor(attributeNames, attributeValueCounts);
+            processJson(attributeNames, attributeValueCounts);
+            writeXML(attributeValueCounts);
 
             shutdownExecutorService();
-
-            writeXML(attributeNames, attributeValueCounts);
-
-            shutdownExecutorService();
-
         } catch (IllegalArgumentException | IOException | InterruptedException e){
             System.out.println(e.getMessage());
         }
@@ -91,25 +89,22 @@ public class ConsoleInterface {
      * @param attributeValueCounts A ConcurrentHashMap to store the counts of attribute values.
      * @throws IOException          If an I/O error occurs while processing JSON files.
      */
-    private static void jsonProcessor(
+    private static void processJson(
             List<String> attributeNames,
             Map<String, Map<String, Integer>> attributeValueCounts
     ) throws IOException {
-        int fileCount = (int) Files.walk(directoryPath).count();
-        executorService =  Executors.newFixedThreadPool(fileCount);
-        JsonProcessor jsonParser = new JsonProcessor(executorService, attributeNames, attributeValueCounts);
-        jsonParser.processJsonFiles(directoryPath);
+        JsonProcessor jsonProcessor = new JsonProcessor(executorService, attributeNames, attributeValueCounts);
+        CompletableFuture<Void>[] completableFutures = jsonProcessor.processJsonFiles(directoryPath);
+        CompletableFuture<Void> allOf = CompletableFuture.allOf(completableFutures);
+        allOf.join();
     }
 
     /**
      * Generates XML statistics file based on the provided attribute names and their occurrence counts.
      *
-     * @param attributeNames       The list of attribute names for which statistics are generated.
      * @param attributeValueCounts A ConcurrentHashMap containing the counts of attribute values.
      */
-    private static void writeXML(List<String> attributeNames, Map<String, Map<String, Integer>> attributeValueCounts) {
-        int numberOfAttributes = attributeNames.size();
-        executorService =  Executors.newFixedThreadPool(numberOfAttributes);
+    private static void writeXML(Map<String, Map<String, Integer>> attributeValueCounts) {
         XMLWriter xmlWriter = new XMLWriter(executorService);
         xmlWriter.generateStatisticsFile(attributeValueCounts);
     }

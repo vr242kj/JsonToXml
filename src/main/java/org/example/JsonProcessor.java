@@ -9,10 +9,12 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Stream;
+
 
 /**
  * The JsonProcessor class is responsible for processing JSON files, extracting specified attributes, and
@@ -69,22 +71,26 @@ public class JsonProcessor {
      * Processes JSON files in the specified directory, extracting attribute values and updating counts concurrently.
      *
      * @param dirPath The path to the directory containing JSON files
+     * @return An array of CompletableFutures representing the asynchronous tasks for processing JSON files.
      * @throws IOException If an I/O error occurs while processing JSON files
      */
-    public void processJsonFiles(Path dirPath) throws IOException {
+    public CompletableFuture<Void>[] processJsonFiles(Path dirPath) throws IOException {
         try (Stream<Path> pathStream = Files.list(dirPath)) {
-            pathStream
+            List<CompletableFuture<Void>> futures = pathStream
                     .filter(Files::isRegularFile)
                     .filter(filePath -> filePath.toString().toLowerCase().endsWith(".json"))
-                    .forEach(filePath -> executorService.submit(() -> {
+                    .map(filePath -> CompletableFuture.runAsync(() -> {
                         try {
                             parseJson(filePath);
                         } catch (IOException e) {
                             throw new RuntimeException("Error parsing file: " + filePath, e);
                         }
-                    }));
+                    }, executorService))
+                    .toList();
+
+            return futures.toArray(new CompletableFuture[0]);
         } catch (IOException e) {
-            throw new IOException("An error occurred while getting the file list: " + e.getMessage());
+            throw new IOException("An error occurred while getting the file list: " + e.getMessage(), e);
         }
     }
 

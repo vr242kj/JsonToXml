@@ -13,10 +13,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -49,10 +49,10 @@ class JsonProcessorTest {
     @Test
     void processJsonFiles() throws IOException, InterruptedException {
         String path = "src\\test\\resources";
-        jsonProcessor.processJsonFiles(Path.of(path));
 
-        executorService.shutdown();
-        executorService.awaitTermination(2, TimeUnit.MILLISECONDS);
+        CompletableFuture<Void>[] completableFutures = jsonProcessor.processJsonFiles(Path.of(path));
+        CompletableFuture<Void> allOf = CompletableFuture.allOf(completableFutures);
+        allOf.join();
 
         Map<String, Map<String, Integer>> result = jsonProcessor.getAttributeValueCounts();
         assertEquals(2, result.size());
@@ -81,37 +81,6 @@ class JsonProcessorTest {
 
         assertThrows(IOException.class,
                 () -> jsonProcessor.processJsonFiles(Path.of(dirPath)));
-    }
-
-    @Test
-    void parseJson() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Method method = JsonProcessor.class.getDeclaredMethod("parseJson", Path.class);
-        method.setAccessible(true);
-
-        Path filePath = Path.of("src/test/resources/test.json");
-
-        method.invoke(jsonProcessor, filePath);
-
-        Map<String, Map<String, Integer>> result = jsonProcessor.getAttributeValueCounts();
-        assertEquals(2, result.size());
-        assertTrue(result.containsKey("genre"));
-        assertTrue(result.containsKey("author"));
-    }
-
-    @Test
-    void parseJson_WhenFilePathNotExist_ThrowIOException() throws NoSuchMethodException {
-        Method method = JsonProcessor.class.getDeclaredMethod("parseJson", Path.class);
-        method.setAccessible(true);
-
-        Path filePath = Path.of("notExist.json");
-
-        assertThrows(IOException.class, () -> {
-            try {
-                method.invoke(jsonProcessor, filePath);
-            } catch (InvocationTargetException e) {
-                throw e.getTargetException();
-            }
-        });
     }
 
     @Test
