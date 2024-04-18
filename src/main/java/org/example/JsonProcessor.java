@@ -6,6 +6,7 @@ import com.google.gson.stream.JsonToken;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -75,23 +76,27 @@ public class JsonProcessor {
      * @throws IOException If an I/O error occurs while processing JSON files
      */
     public CompletableFuture<Void>[] processJsonFiles(Path dirPath) throws IOException {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
         try (Stream<Path> pathStream = Files.list(dirPath)) {
-            List<CompletableFuture<Void>> futures = pathStream
+            pathStream
                     .filter(Files::isRegularFile)
                     .filter(filePath -> filePath.toString().toLowerCase().endsWith(".json"))
-                    .map(filePath -> CompletableFuture.runAsync(() -> {
-                        try {
-                            parseJson(filePath);
-                        } catch (IOException e) {
-                            throw new RuntimeException("Error parsing file: " + filePath, e);
-                        }
-                    }, executorService))
-                    .toList();
-
-            return futures.toArray(new CompletableFuture[0]);
+                    .forEach(filePath -> {
+                        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                            try {
+                                parseJson(filePath);
+                            } catch (IOException e) {
+                                System.err.println("Error parsing file: " + filePath + ", " + e.getMessage());
+                            }
+                        }, executorService).exceptionally(ex -> null);
+                        futures.add(future);
+                    });
         } catch (IOException e) {
             throw new IOException("An error occurred while getting the file list: " + e.getMessage(), e);
         }
+
+        return futures.toArray(new CompletableFuture[0]);
     }
 
     /**
@@ -113,11 +118,15 @@ public class JsonProcessor {
      * @throws IOException If an I/O error occurs while processing the JSON element
      */
     private void processJsonElement(JsonReader reader) throws IOException {
+        if (reader.peek() != JsonToken.BEGIN_ARRAY) {
+            throw new IOException("Invalid JSON format: Expecting array at the root level.");
+        }
         reader.beginArray();
         while (reader.hasNext()) {
-            if (reader.peek() == JsonToken.BEGIN_OBJECT) {
-                processJsonObject(reader);
+            if (reader.peek() != JsonToken.BEGIN_OBJECT) {
+                throw new IOException("Invalid JSON format: Expecting beginning of the object - {.");
             }
+            processJsonObject(reader);
         }
         reader.endArray();
     }

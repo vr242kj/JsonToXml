@@ -35,6 +35,7 @@ public class ConsoleInterface {
 
         try {
             parseInputArguments(args);
+
             List<String> attributeNames = parseAttributes(attributeName);
             Map<String, Map<String, Integer>> attributeValueCounts = new ConcurrentHashMap<>();
 
