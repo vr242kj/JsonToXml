@@ -91,7 +91,7 @@ class JsonProcessorTest {
 
         when(reader.nextName()).thenReturn("author");
         when(reader.nextString()).thenReturn("George Orwell");
-        when(reader.peek()).thenReturn(JsonToken.BEGIN_OBJECT).thenReturn(JsonToken.STRING);
+        when(reader.peek()).thenReturn(JsonToken.BEGIN_ARRAY).thenReturn(JsonToken.BEGIN_OBJECT).thenReturn(JsonToken.STRING);
 
         Method method = JsonProcessor.class.getDeclaredMethod("processJsonElement", JsonReader.class);
         method.setAccessible(true);
@@ -129,7 +129,7 @@ class JsonProcessorTest {
 
         when(reader.nextName()).thenReturn("genre");
         when(reader.nextString()).thenReturn("Romance").thenReturn("Tragedy");
-        when(reader.peek()).thenReturn(JsonToken.BEGIN_OBJECT).thenReturn(JsonToken.BEGIN_ARRAY)
+        when(reader.peek()).thenReturn(JsonToken.BEGIN_ARRAY).thenReturn(JsonToken.BEGIN_OBJECT).thenReturn(JsonToken.BEGIN_ARRAY)
                 .thenReturn(JsonToken.STRING).thenReturn(JsonToken.STRING);
 
         Method method = JsonProcessor.class.getDeclaredMethod("processJsonElement", JsonReader.class);
