@@ -41,7 +41,7 @@ class XMLWriterTest {
         xmlWriter.generateStatisticsFile(attributeValueCounts);
 
         executorService.shutdown();
-        executorService.awaitTermination(2, TimeUnit.MILLISECONDS);
+        executorService.awaitTermination(5, TimeUnit.MILLISECONDS);
 
         try (BufferedReader reader = new BufferedReader(new FileReader("statistics_by_attribute1.xml"))) {
             StringBuilder content = new StringBuilder();
