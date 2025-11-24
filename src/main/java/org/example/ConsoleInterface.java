@@ -23,8 +23,6 @@ public class ConsoleInterface {
             Usage: mvn compile exec:java "-Dexec.args=<directory_path> <attribute_names>"
             "The <attribute_names> parameter should be a comma-separated list of attribute names, without any spaces.
             """;
-    private static Path directoryPath;
-    private static String attributeName;
 
     /**
      * Starts the processing of JSON files and generation of XML statistics based on provided command-line arguments.
@@ -34,42 +32,30 @@ public class ConsoleInterface {
     public static void start(String[] args) {
 
         try {
-            parseInputArguments(args);
+            if (args.length != 2) {
+                throw new IllegalArgumentException(USAGE_MESSAGE);
+            }
 
-            List<String> attributeNames = parseAttributes(attributeName);
+            Path directoryPath = Path.of(args[0]);
+            String attributeNamesArg = args[1];
+
+            if (!Files.exists(directoryPath) || !Files.isDirectory(directoryPath)) {
+                throw new IllegalArgumentException("Invalid directory path.");
+            }
+
+            if (attributeNamesArg.isEmpty()) {
+                throw new IllegalArgumentException("Attribute list is empty.");
+            }
+
+            List<String> attributeNames = parseAttributes(attributeNamesArg);
             Map<String, Map<String, Integer>> attributeValueCounts = new ConcurrentHashMap<>();
 
-            processJson(attributeNames, attributeValueCounts);
+            processJson(directoryPath, attributeNames, attributeValueCounts);
             writeXML(attributeValueCounts);
 
             shutdownExecutorService();
         } catch (IllegalArgumentException | IOException | InterruptedException e){
             System.out.println(e.getMessage());
-        }
-    }
-
-    /**
-     * Parses the input command-line arguments.
-     *
-     * @param args Command-line arguments provided
-     * @throws IllegalArgumentException If the arguments are invalid or missing
-     */
-    private static void parseInputArguments(String[] args)  {
-        if (args.length != 2) {
-            throw new IllegalArgumentException(USAGE_MESSAGE);
-        }
-
-        String directory = args[0];
-        attributeName = args[1];
-
-        directoryPath = Path.of(directory);
-
-        if (!Files.exists(directoryPath ) || !Files.isDirectory(directoryPath )) {
-            throw new IllegalArgumentException("Invalid directory path.");
-        }
-
-        if (attributeName.isEmpty()) {
-            throw new IllegalArgumentException("Attribute list is empty.");
         }
     }
 
@@ -91,6 +77,7 @@ public class ConsoleInterface {
      * @throws IOException          If an I/O error occurs while processing JSON files.
      */
     private static void processJson(
+            Path directoryPath,
             List<String> attributeNames,
             Map<String, Map<String, Integer>> attributeValueCounts
     ) throws IOException {

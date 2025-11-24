@@ -80,23 +80,30 @@ public class JsonProcessor {
 
         try (Stream<Path> pathStream = Files.list(dirPath)) {
             pathStream
-                    .filter(Files::isRegularFile)
-                    .filter(filePath -> filePath.toString().toLowerCase().endsWith(".json"))
-                    .forEach(filePath -> {
-                        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                            try {
-                                parseJson(filePath);
-                            } catch (IOException e) {
-                                System.err.println("Error parsing file: " + filePath + ", " + e.getMessage());
-                            }
-                        }, executorService).exceptionally(ex -> null);
-                        futures.add(future);
-                    });
+                    .filter(filePath -> Files.isRegularFile(filePath) && filePath.toString().toLowerCase().endsWith(".json"))
+                    .forEach(filePath -> futures.add(runAsyncParseJson(filePath)));
         } catch (IOException e) {
             throw new IOException("An error occurred while getting the file list: " + e.getMessage(), e);
         }
 
         return futures.toArray(new CompletableFuture[0]);
+    }
+
+    /**
+     * Runs asynchronous parsing of a single JSON file using the executor service.
+     * Any IOException thrown during parsing is caught and logged to System.err.
+     *
+     * @param filePath The path to the JSON file to be parsed
+     * @return A CompletableFuture representing the asynchronous parsing task
+     */
+    private CompletableFuture<Void> runAsyncParseJson(Path filePath) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                parseJson(filePath);
+            } catch (IOException e) {
+                System.err.println("Error parsing file: " + filePath + ", " + e.getMessage());
+            }
+        }, executorService).exceptionally(ex -> null);
     }
 
     /**
